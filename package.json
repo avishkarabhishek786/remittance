@@ -1,0 +1,17 @@
+{
+  "name": "remittance",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "ethers": "^5.3.1",
+    "hardhat": "^2.4.0",
+    "hardhat-deploy": "^0.8.8"
+  }
+}
