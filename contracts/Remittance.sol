@@ -3,19 +3,22 @@ pragma solidity ^0.8.3;
 
 import "./Stoppable.sol";
 import "./Address.sol";
+import "./IUSM.sol";
 
-contract Remittance is Stoppable{
+//import "hardhat/console.sol";
+
+contract Remittance is Stoppable {
 
     using Address for address payable;
 
-    struct RemitDetails {
-        uint256 amount; // For storing the amount of Remit
-        address remitCreator; // To store the remit initiator's address
-        uint256 deadline; // To store in seconds from the current time for the claim back to start
-    }
+    IUSM usdao;
 
-    uint256 public feeThreshold; // Fee would be taken once the remittance is valued more than 10K wei
-    uint256 public fee; // Fee for each remittance valued more than 10K wei
+    struct RemitDetails {
+        address remitCreator; // To store the remit initiator's address
+        uint256 amount; // For storing the amount of Remit
+        uint256 deadline; // To store in seconds from the current time for the claim back to start
+        bool exists;
+    }
 
     mapping (address => uint256) public balances; // To store the contract owner & exchange owner balance
     mapping (bytes32 => RemitDetails) public remittances;
@@ -25,9 +28,8 @@ contract Remittance is Stoppable{
     event Exchange(bytes32 indexed hashValue, address indexed exchanger, uint256 value);
     event ClaimBack(bytes32 indexed hashValue, address indexed remitCreator, uint256 value);
 
-    constructor(bool initialRunState) Stoppable(initialRunState){
-        feeThreshold = 10000;
-        fee = 100;
+    constructor(IUSM _usdao, bool initialRunState) Stoppable(initialRunState) {
+        usdao = IUSM(_usdao);
     }
 
     function encrypt(bytes32 userSecret, address exchangerAddress) public view returns(bytes32 password){
@@ -37,30 +39,27 @@ contract Remittance is Stoppable{
 
     }
 
-    function remit(bytes32 hashValue, uint256 second) public onlyIfRunning payable returns(bool status){
+    function remit(bytes32 hashValue, uint256 second, uint256 remittance_amount) public onlyIfRunning returns(bool status){
+
+        // Check if remit with this hash is already created
+        require(!remittances[hashValue].exists, "Remittance already exists.");
 
         // The hashValue should be unique
         require(remittances[hashValue].remitCreator == address(0), "The hashValue should be unique");
 
-        // To decrease the gas used
-        uint msgValue = msg.value;
-
         // Minimum 1 wei should be sent.
-        require(msgValue > 0, "Amount should be atleast 1 wei");
+        require(remittance_amount > 0, "Amount should be atleast 1 wei USDAO");
 
-        // Owner taking his cut only if the transfer is more than 10,000 wei
-        if (msg.value > feeThreshold){
-            address ownerAddress = getOwner();
-            balances[ownerAddress] = balances[ownerAddress]+ fee;
-            msgValue = msgValue-fee;
-        }
+        // Check contract balance
+        require(usdao.balanceOf(address(this))>=remittance_amount, "Insufficient balance.");
 
-        // Details of Bob is updated
-        remittances[hashValue].amount = msgValue;
+        // Details of Receiver is updated
+        remittances[hashValue].amount = remittance_amount;
         remittances[hashValue].remitCreator = msg.sender;
         remittances[hashValue].deadline = block.timestamp+second;
+        remittances[hashValue].exists = true;
 
-        emit Remit(hashValue, msg.sender, msgValue);
+        emit Remit(hashValue, msg.sender, remittance_amount);
 
         return true;
 
@@ -91,14 +90,16 @@ contract Remittance is Stoppable{
         require(amount > 0, "Zero cant be withdrawn");
 
         uint balance = balances[msg.sender];
-        //require(balance >= amount, "Withdraw amount requested higher than balance");
-        // Commented because the next line will revert if amount is a value greater than balance
-
+        
+        require(balance >= amount, "Withdraw amount requested higher than balance");
+        
         balances[msg.sender] = balance-amount;
 
         emit Withdrawed(msg.sender, amount);
 
-        payable(address(msg.sender)).sendValue(amount);
+        // Transfer USDAO from this contract to the Exchanger
+        require(usdao.transfer(address(msg.sender), amount), "USDAO withdraw failed.");
+
         return true;
 
     }
@@ -120,7 +121,9 @@ contract Remittance is Stoppable{
 
         emit ClaimBack(hashValue, msg.sender, amount);
 
-        payable(address(msg.sender)).sendValue(amount);
+        // Transfer USDAO from this contract to the Exchanger
+        require(usdao.transfer(address(msg.sender), amount), "USDAO claim back failed.");
+
         return true;
 
     }

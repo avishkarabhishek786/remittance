@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.3;
 
-import "./Owned.sol";
+import "./Ownable.sol";
 
-contract Stoppable is Owned {
+contract Stoppable is Ownable {
 
     bool private isRunning;
     bool private isStopped;
