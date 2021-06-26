@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import './App.css';
 import { ethers } from "ethers";
 import { Remittance } from "./abi.js";
-
+import {Navbar} from "./html";
 
 function App() {
 
@@ -167,7 +167,7 @@ function App() {
     if (isError) {
         return (
             <>
-                {/* <Navbar />  */}
+                <Navbar /> 
                 <div className="alert alert-danger" role="alert">Error</div>;
             </>
         )
@@ -177,10 +177,15 @@ function App() {
 
     } else {
         return (
-            <div className="App">
-                <p>loggedInAccount : {loggedInAccount}</p>
-                <p>etherBalance : {etherBalance}</p>
-            </div>
+            <>
+                <Navbar /> 
+                <div className="container">
+                    <div className="App">
+                        <p>loggedInAccount : {loggedInAccount}</p>
+                        <p>etherBalance : {etherBalance}</p>
+                    </div>
+                </div>
+            </>
         );
     }
 

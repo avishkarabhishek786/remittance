@@ -13,4 +13,4 @@ export const Remittance = {
         31337: '',
         1337: ''
     }    
-}
+} 
