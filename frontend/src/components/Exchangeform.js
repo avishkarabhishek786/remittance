@@ -10,9 +10,9 @@ export default function Exchangeform({onSubmit}) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
-      <input defaultValue="address" type="text" {...register("address", { required: true })} />
+      <input  type="text" placeholder="Enter Exchanger Address" {...register("address", { required: true })} />
       
-      <input defaultValue="amount" type="number" {...register("amount", { required: true })} />
+      <input  type="number" placeholder="Enter Amount" {...register("amount", { required: true })} />
       
       <input type="submit" />
     </form>

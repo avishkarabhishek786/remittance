@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import './App.css';
+import 'bootstrap/dist/css/bootstrap.min.css';
 import { ethers } from "ethers";
 import { Remittance, USDAO } from "./abi.js";
 import { Navbar } from "./html";
 import Exchangeform from "./components/Exchangeform";
+import swal from 'sweetalert';
+
 
 function App() {
 
@@ -17,12 +20,21 @@ function App() {
     const [usdaoContract, setUSDAOContract] = useState(undefined);
     const [etherBalance, setEtherBalance] = useState(undefined);
     const [amount, setAmount] = useState(undefined);
-    const [encrypthash, setEncrypthash] = useState(undefined);
+    const [encrypthash, setEncrypthash] = useState('');
     const [userSecret, setUsersecret] = useState(undefined);
+    const [usdaobalance, setUSDAObalance] = useState(undefined);
+    const [remittance, setRemittance] = useState(0);
+    const [viewremittance, setViewremittance] = useState({
+        amount: 0,
+        deadline: 0,
+        address: '',
+    });
 
     const [isError, setError] = useState(false);
 
     const EXCHANGER = "0x00Dd4cE8a3Ba697a17c079589004446d267435df";
+
+    let alertMessage ;
 
     const connect = async () => {
         try {
@@ -133,6 +145,9 @@ function App() {
 
             setUSDAOContract(usdaoContract);
 
+            const usdao_balance = await usdaoContract.balanceOf(accounts[0]);
+            setUSDAObalance(Number(ethers.utils.formatEther(String(usdao_balance))))
+
             console.log(usdaoContract);
 
         }
@@ -156,6 +171,7 @@ function App() {
                 setEtherBalance(ethers.utils.formatEther(
                     Number(await metamask.getBalance(loggedInAccount)).toString()
                 ));
+                
             }
         })()
     }, [loggedInAccount]);
@@ -192,34 +208,52 @@ function App() {
         remittanceContract
     ]);
 
+
+
+    
+
     const new_remit = async (exchangerAddress, remittance_amount) => {
+        debugger;
         try {
 
             remittance_amount = Number(remittance_amount);
             if (remittance_amount < 10) {
-                alert("Minimum amount is 10 USDAO");
+                // alert("Minimum amount is 10 USDAO");
+                swal("Error!", "Minimum amount is 10 USDAO!", "error");
+                return false;
+            }
+            // debugger;
+            if (usdaobalance < remittance_amount) {
+                // alert("Minimum amount is 10 USDAO");
+                swal("Error!", "You Don't have sufficient balance!", "error");
                 return false;
             }
             //console.log(remittanceContract);
             const user_secret = ethers.utils.formatBytes32String((String(+ new Date())));
             console.log(user_secret);
-            setUsersecret({ userSecret: user_secret })
+            setUsersecret(user_secret)
             // console.log(typeof user_secret);
             // console.log(remittanceContract.encrypt);
             const encrypt_hash = await remittanceContract.encrypt(user_secret, exchangerAddress);
             console.log("encrypt_hash", encrypt_hash);
-            setEncrypthash({ encrypthash: encrypt_hash })
+            setEncrypthash(encrypt_hash)
             // remittanceContract.
-            alert(`Please send ${remittance_amount} USDAO to ${exchangerAddress} ASAP.`);
-
+            // alert(`Please send ${remittance_amount} USDAO to ${remittanceContract.address} ASAP.
+            //         here is your Hash : ${encrypt_hash}
+            // `);
+            
+        
+            
             return true;
 
         } catch (error) {
-            console.error(error)
+            console.log(error)
+            swal("Error!", error, "error");
         }
     }
 
     const submitdata = data => {
+        debugger;
         setAmount({ amount: data.amount })
         new_remit(data.address, data.amount)
     }
@@ -228,11 +262,22 @@ function App() {
         console.log(encrypt_hash.encrypthash)
         console.log(remittance_amount.amount)
         try {
+            if(typeof encrypt_hash.encrypthash === 'string' && remittance_amount.amount > 0 )
+            {
+                
+                const remit_amount = ethers.utils.parseEther(remittance_amount.amount);
+                console.log(Number(remit_amount))
+                const remit = await remittanceContract.remit(encrypt_hash.encrypthash, "3600", remit_amount);
+                console.log(remit);
+            }
+            else{
+                swal("Error Occured!", "Provide correct Information!", "error");
+            }
+            // console.log('Error')
             //console.log(remittanceContract);
-            const remit_amount = ethers.utils.parseEther(remittance_amount.amount);
-            const remit = await remittanceContract.remit(encrypt_hash.encrypthash, "3600", remit_amount);
-            console.log(remit);
+            
         } catch (error) {
+            swal("Error Occured!", error, "error");
             console.error(error);
         }
     }
@@ -240,6 +285,16 @@ function App() {
     const view_remittance = async (encrypt_hash) => {
         try {
             const remit = await remittanceContract.remittances(encrypt_hash);
+            if(remit.exists)
+            {
+                var d = new Date(Number(String(remit.deadline))*1000).toString()
+                setViewremittance({
+                    amount: Number(ethers.utils.formatEther(String(remit.amount))),
+                    deadline: d.substring(0, 15),
+                    address: remit.remitCreator
+                })
+            }
+            // setViewremittance(Number(ethers.utils.formatEther(String(remit.amount))))
             console.log(remit);
         } catch (error) {
             console.error(error);
@@ -277,6 +332,7 @@ function App() {
         try {
             const remit_balance = await remittanceContract.balances(loggedInAccount);
             console.log(Number(remit_balance));
+            setRemittance(Number(ethers.utils.formatEther(String(remit_balance))));
         } catch (error) {
             console.log(error);
         }
@@ -286,6 +342,7 @@ function App() {
         try {
             const usdao_balance = await usdaoContract.balanceOf(loggedInAccount);
             console.log(Number(usdao_balance));
+            setUSDAObalance(Number(ethers.utils.formatEther(String(usdao_balance))))
             
         } catch (error) {
             console.error(error);
@@ -307,15 +364,31 @@ function App() {
 
         return (
             <>
-                <Navbar />
-                <div className="container">
-                    <div className="row">
+                {/* <Navbar /> */}
+                <div className="container mt-5">
+                    
+                    {!!encrypthash && (
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <strong>Please send </strong>{amount}<strong> USDAO to </strong>{usdaoContract.address}<strong> ASAP .</strong>
+                        <strong>Hash : </strong>{encrypthash}
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                        </div>
+                    )}
+                
+
+                    <div className="mt-5 text-center">
                         <div>
                             <p>Account : {loggedInAccount}</p>
                             <p>Ether Balance : {etherBalance}</p>
+                            <p>USDAO Balance : {usdaobalance}</p>
+                            <p>Remittance Balance : {remittance}</p>
+                            <p>User Secret : {userSecret}</p>
+                            <p>Hash : {encrypthash}</p>
                         </div>
                     </div>
-                    <div class="row align-items-center">
+                    <div class="row d-flex justify-content-between ">
                         <div class="col-5">
                             <div className="App">
                                 <div class="alert alert-light" role="alert">
@@ -323,13 +396,14 @@ function App() {
                                 </div>
                                 <Exchangeform onSubmit={submitdata} />
                                 <button onClick={() => send_remit_request(encrypthash, amount)}>New Remittance</button>
-                                <button onClick={() => view_remittance(encrypthash.encrypthash)}>View Remittance</button>
+                                {/* <button onClick={() => view_remittance(encrypthash.encrypthash)}>View Remittance</button> */}
+                                <button onClick={() => view_remittance("0x0b9fd3c4b0108bfa1d3c781f36f781a64776e24ff682316768b0b9ccc129190e")}>View Remittance</button>
                             </div>
+                            <p>Remittance amount : {viewremittance.amount ? viewremittance.amount : 'Remittance value do not Exist' }</p>
+                            <p>Remittance deadline: {viewremittance.deadline ? viewremittance.deadline : 'Remitance Expired' }</p>
+                            <p>Remittance address: {viewremittance.address ? viewremittance.address : 'Remittance value do not Exist' }</p>
                         </div>
-                        <div class="col-2">
-
-                        </div>
-                        <div class="col-5">
+                        <div class="col-5 flex-start">
                             <div className="App">
                                 <div class="alert alert-light" role="alert">
                                     Remittance Exchanger
