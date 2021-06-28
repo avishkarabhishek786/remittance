@@ -238,9 +238,9 @@ function App() {
             console.log("encrypt_hash", encrypt_hash);
             setEncrypthash(encrypt_hash)
             // remittanceContract.
-            // alert(`Please send ${remittance_amount} USDAO to ${remittanceContract.address} ASAP.
-            //         here is your Hash : ${encrypt_hash}
-            // `);
+            alert(`Please send ${remittance_amount} USDAO to ${remittanceContract.address} ASAP.
+                    here is your Hash : ${encrypt_hash}
+            `);
             
         
             
@@ -258,16 +258,20 @@ function App() {
         new_remit(data.address, data.amount)
     }
 
+    const exchanger_withdrawal_Submit = data => {
+        exchanger_withdrawal(data.address,data.amount)
+    }
+
     const send_remit_request = async (encrypt_hash, remittance_amount) => {
-        console.log(encrypt_hash.encrypthash)
+        console.log(encrypt_hash)
         console.log(remittance_amount.amount)
         try {
-            if(typeof encrypt_hash.encrypthash === 'string' && remittance_amount.amount > 0 )
+            if(typeof encrypt_hash === 'string' && remittance_amount.amount > 0 )
             {
                 
                 const remit_amount = ethers.utils.parseEther(remittance_amount.amount);
                 console.log(Number(remit_amount))
-                const remit = await remittanceContract.remit(encrypt_hash.encrypthash, "3600", remit_amount);
+                const remit = await remittanceContract.remit(encrypt_hash, "3600", remit_amount);
                 console.log(remit);
             }
             else{
@@ -303,6 +307,9 @@ function App() {
 
 
     const exchanger_withdrawal = async (user_secret, withdrawal_amount) => {
+        console.log(user_secret)
+        console.log(withdrawal_amount)
+        
         try {
 
             withdrawal_amount = ethers.utils.parseEther(String(withdrawal_amount));
@@ -367,7 +374,7 @@ function App() {
                 {/* <Navbar /> */}
                 <div className="container mt-5">
                     
-                    {!!encrypthash && (
+                    {/* {!!encrypthash && (
                         <div class="alert alert-success alert-dismissible fade show" role="alert">
                         <strong>Please send </strong>{amount}<strong> USDAO to </strong>{usdaoContract.address}<strong> ASAP .</strong>
                         <strong>Hash : </strong>{encrypthash}
@@ -375,7 +382,7 @@ function App() {
                             <span aria-hidden="true">&times;</span>
                         </button>
                         </div>
-                    )}
+                    )} */}
                 
 
                     <div className="mt-5 text-center">
@@ -408,11 +415,11 @@ function App() {
                                 <div class="alert alert-light" role="alert">
                                     Remittance Exchanger
                                 </div>
-
-                                <button onClick={() => exchanger_withdrawal(
+                                <Exchangeform onSubmit={exchanger_withdrawal_Submit} />
+                                {/* <button onClick={() => exchanger_withdrawal(
                                     "0x3136323438303135363631353900000000000000000000000000000000000000",
                                     20
-                                )}>Withdraw Received Amount</button>
+                                )}>Withdraw Received Amount</button> */}
                                
                                 <button onClick={() => remittance_balance()}>Remittance Balance</button>
                                 <button onClick={() => usdao_balance()}>USDAO Balance</button>
