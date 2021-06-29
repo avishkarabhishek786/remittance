@@ -238,9 +238,9 @@ function App() {
             console.log("encrypt_hash", encrypt_hash);
             setEncrypthash(encrypt_hash)
             // remittanceContract.
-            // alert(`Please send ${remittance_amount} USDAO to ${remittanceContract.address} ASAP.
-            //         here is your Hash : ${encrypt_hash}
-            // `);
+            alert(`Please send ${remittance_amount} USDAO to ${remittanceContract.address} ASAP.
+                    here is your Hash : ${encrypt_hash}
+            `);
             
         
             
@@ -263,15 +263,15 @@ function App() {
     }
 
     const send_remit_request = async (encrypt_hash, remittance_amount) => {
-        console.log(encrypt_hash.encrypthash)
+        console.log(encrypt_hash)
         console.log(remittance_amount.amount)
         try {
-            if(typeof encrypt_hash.encrypthash === 'string' && remittance_amount.amount > 0 )
+            if(typeof encrypt_hash === 'string' && remittance_amount.amount > 0 )
             {
                 
                 const remit_amount = ethers.utils.parseEther(remittance_amount.amount);
                 console.log(Number(remit_amount))
-                const remit = await remittanceContract.remit(encrypt_hash.encrypthash, "3600", remit_amount);
+                const remit = await remittanceContract.remit(encrypt_hash, "3600", remit_amount);
                 console.log(remit);
             }
             else{
@@ -374,7 +374,7 @@ function App() {
                 {/* <Navbar /> */}
                 <div className="container mt-5">
                     
-                    {!!encrypthash && (
+                    {/* {!!encrypthash && (
                         <div class="alert alert-success alert-dismissible fade show" role="alert">
                         <strong>Please send </strong>{amount}<strong> USDAO to </strong>{usdaoContract.address}<strong> ASAP .</strong>
                         <strong>Hash : </strong>{encrypthash}
@@ -382,7 +382,7 @@ function App() {
                             <span aria-hidden="true">&times;</span>
                         </button>
                         </div>
-                    )}
+                    )} */}
                 
 
                     <div className="mt-5 text-center">
