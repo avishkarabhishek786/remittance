@@ -68,11 +68,12 @@ body {
     color: white;
     text-transform: uppercase;
     border: none;
-    margin-top: 40px;
-    padding: 20px;
+    margin-top: 10px;
+    padding: 10px;
     font-size: 16px;
     font-weight: 100;
-    letter-spacing: 10px;
+    letter-spacing: 0px;
+    width: -webkit-fill-available;
   }
   
   button[type="submit"]:hover,

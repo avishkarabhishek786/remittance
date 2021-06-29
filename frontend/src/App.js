@@ -7,6 +7,7 @@ import { Navbar } from "./html";
 import Exchangeform from "./components/Exchangeform";
 import swal from 'sweetalert';
 import { useForm } from "react-hook-form";
+import { reset } from 'axe-core';
 
 function App() {
 
@@ -117,7 +118,7 @@ function App() {
         const init = async () => {
 
             const { provider, metamaskProvider, signer, network } = await connect();
-
+            // debugger;
             const accounts = await metamaskProvider.listAccounts();
             console.log(accounts[0]);
             setAccounts(accounts[0]);
@@ -128,15 +129,17 @@ function App() {
                 ));
             }
 
-            const remittanceContract = new ethers.Contract(
+            const remittanceContract1 = await new ethers.Contract(
                 Remittance.address[network],
                 Remittance.abi,
                 signer
             );
 
-            setRemittanceContract(remittanceContract);
+            console.log(remittanceContract1)
 
-            console.log(remittanceContract);
+            setRemittanceContract(remittanceContract1);
+
+            // console.log(remittanceContract);
 
             const usdaoContract = new ethers.Contract(
                 USDAO.address[network],
@@ -150,13 +153,14 @@ function App() {
             console.log(usdao_balance)
             setUSDAObalance(Number(ethers.utils.formatEther(String(usdao_balance))))
             // console.log(remittanceContract.add)
-            const remit_balance = await remittanceContract.balances(String(remittanceContract.address));
+            const remit_balance = await remittanceContract1.balances(String(remittanceContract1.address));
             
             setRemittance(Number(ethers.utils.formatEther(String(remit_balance))));
 
         }
 
         init();
+
 
         window.ethereum.on('accountsChanged', handleAccountsChanged);
 
@@ -175,12 +179,16 @@ function App() {
                 setEtherBalance(ethers.utils.formatEther(
                     Number(await metamask.getBalance(loggedInAccount)).toString()
                 ));
+             
+            
+            }
+            if(typeof usdaoContract == 'object' && typeof remittanceContract == 'object')  {
+                
                 const usdao_balance = await usdaoContract.balanceOf(loggedInAccount);
                 setUSDAObalance(Number(ethers.utils.formatEther(String(usdao_balance))))
                 const remit_balance = await remittanceContract.balances(String(remittanceContract.address));
                 setRemittance(Number(ethers.utils.formatEther(String(remit_balance))));
-                
-            }
+            } 
         })()
     }, [loggedInAccount]);
 
@@ -245,6 +253,12 @@ function App() {
         // alert(`Please send ${remittance_amount} USDAO to ${remittanceContract.address} ASAP.
         // here is your Hash : ${encrypt_hash}
         // `);
+        if(localStorage.getItem('encrypthash') && localStorage.getItem('userSecret')){
+            localStorage.removeItem('encrypthash')
+            localStorage.removeItem('userSecret')
+        }
+        localStorage.setItem('encrypthash', encrypt_hash)
+        localStorage.setItem('userSecret', user_secret)
         
         // Send USDAO from sender to the Remittance contract
         const remit_amount = ethers.utils.parseEther(String(remittance_amount));
@@ -319,7 +333,7 @@ function App() {
     //     }
     // }
 
-    const submitdata = data => {
+    const submitdata = (data) => {
         
         setAmount({ amount: data.amount })
         new_remit(data.address, data.amount)
@@ -409,26 +423,26 @@ function App() {
         }
     }
 
-    const remittance_balance = async () => {
-        try {
-            const remit_balance = await remittanceContract.balances("0xd9F05ef1E7EEa7ac0941c27574d4eD7cfd376Dd0");
-            console.log(Number(remit_balance));
-            setRemittance(Number(ethers.utils.formatEther(String(remit_balance))));
-        } catch (error) {
-            console.log(error);
-        }
-    }
+    // const remittance_balance = async () => {
+    //     try {
+    //         const remit_balance = await remittanceContract.balances("0xd9F05ef1E7EEa7ac0941c27574d4eD7cfd376Dd0");
+    //         console.log(Number(remit_balance));
+    //         setRemittance(Number(ethers.utils.formatEther(String(remit_balance))));
+    //     } catch (error) {
+    //         console.log(error);
+    //     }
+    // }
 
-    const usdao_balance = async () => {
-        try {
-            const usdao_balance = await usdaoContract.balanceOf(loggedInAccount);
-            console.log(Number(usdao_balance));
-            setUSDAObalance(Number(ethers.utils.formatEther(String(usdao_balance))))
+    // const usdao_balance = async () => {
+    //     try {
+    //         const usdao_balance = await usdaoContract.balanceOf(loggedInAccount);
+    //         console.log(Number(usdao_balance));
+    //         setUSDAObalance(Number(ethers.utils.formatEther(String(usdao_balance))))
             
-        } catch (error) {
-            console.error(error);
-        }
-    }
+    //     } catch (error) {
+    //         console.error(error);
+    //     }
+    // }
 
     if (isError) {
         return (
@@ -465,7 +479,8 @@ function App() {
                             <p>Ether Balance : {etherBalance}</p>
                             <p>USDAO Balance : {usdaobalance}</p>
                             <p>Remittance Balance : {remittance}</p>
-                            <p>User Secret : {userSecret}</p>
+                            <p>User Secret : {localStorage.getItem('userSecret')}</p>
+                            {/* <p>User Secret : {userSecret}</p> */}
                             <p>Hash : {localStorage.getItem('encrypthash')}</p>
                         </div>
                     </div>
@@ -478,7 +493,7 @@ function App() {
                                 <Exchangeform onSubmit={submitdata} fieldOne='Enter Exchanger Address'/>
                                 {/* <button onClick={() => send_remit_request(encrypthash, amount)}>New Remittance</button> */}
                                 {/* <button onClick={() => view_remittance(encrypthash.encrypthash)}>View Remittance</button> */}
-                                <form onSubmit={handleSubmit((data)=>view_remittance(data.hash))}>
+                                <form onSubmit={handleSubmit((data)=>view_remittance(data.hash))} style={{marginTop: '40px'}}>
                                     <input  type="text" placeholder="Enter Hash" {...register("hash", { required: true })} />    
                                     {/* <input type="submit" /> */}
                                     {/* <button onClick={() => view_remittance("0x0b9fd3c4b0108bfa1d3c781f36f781a64776e24ff682316768b0b9ccc129190e")} type='submit'>View Remittance</button> */}
@@ -500,13 +515,13 @@ function App() {
                                     "0x3136323438303135363631353900000000000000000000000000000000000000",
                                     20
                                 )}>Withdraw Received Amount</button> */}
-                               <form onSubmit={handleSubmit((data)=>view_remittance(data.hash))}>
+                               <form onSubmit={handleSubmit((data)=>view_remittance(data.hash))} style={{marginTop: '40px'}}>
                                     <input  type="text" placeholder="Enter Hash" {...register("hash", { required: true })} />    
                                     
                                     <button type='submit'>View Remittance</button>
                                 </form>
-                                <button onClick={() => remittance_balance()}>Remittance Balance</button>
-                                <button onClick={() => usdao_balance()}>USDAO Balance</button>
+                                {/* <button onClick={() => remittance_balance()}>Remittance Balance</button>
+                                <button onClick={() => usdao_balance()}>USDAO Balance</button> */}
 
                             </div>
                         </div>
