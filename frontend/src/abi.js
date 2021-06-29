@@ -424,7 +424,10 @@ export const Remittance = {
 export const USDAO = {
     name:'USDAO',
     abi: [
-        "function balanceOf(address account) external view returns (uint256)"
+        "function balanceOf(address account) external view returns (uint256)",
+        "function transfer(address recipient, uint256 amount) external returns (bool)"
+
+
     ],
     address: {
         42: '0x3280b0b8f147bc0e03f1a8eb462edcb77a0635fe'

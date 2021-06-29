@@ -6,7 +6,7 @@ import { Remittance, USDAO } from "./abi.js";
 import { Navbar } from "./html";
 import Exchangeform from "./components/Exchangeform";
 import swal from 'sweetalert';
-
+import { useForm } from "react-hook-form";
 
 function App() {
 
@@ -34,6 +34,7 @@ function App() {
 
     const EXCHANGER = "0x00Dd4cE8a3Ba697a17c079589004446d267435df";
 
+    const { register, handleSubmit, watch, formState: { errors } } = useForm();
     let alertMessage ;
 
     const connect = async () => {
@@ -146,9 +147,12 @@ function App() {
             setUSDAOContract(usdaoContract);
 
             const usdao_balance = await usdaoContract.balanceOf(accounts[0]);
+            console.log(usdao_balance)
             setUSDAObalance(Number(ethers.utils.formatEther(String(usdao_balance))))
-
-            console.log(usdaoContract);
+            // console.log(remittanceContract.add)
+            const remit_balance = await remittanceContract.balances(String(remittanceContract.address));
+            
+            setRemittance(Number(ethers.utils.formatEther(String(remit_balance))));
 
         }
 
@@ -171,6 +175,10 @@ function App() {
                 setEtherBalance(ethers.utils.formatEther(
                     Number(await metamask.getBalance(loggedInAccount)).toString()
                 ));
+                const usdao_balance = await usdaoContract.balanceOf(loggedInAccount);
+                setUSDAObalance(Number(ethers.utils.formatEther(String(usdao_balance))))
+                const remit_balance = await remittanceContract.balances(String(remittanceContract.address));
+                setRemittance(Number(ethers.utils.formatEther(String(remit_balance))));
                 
             }
         })()
@@ -209,51 +217,110 @@ function App() {
     ]);
 
 
-
-    
-
     const new_remit = async (exchangerAddress, remittance_amount) => {
-        debugger;
         try {
+        // debugger;
+        remittance_amount = Number(remittance_amount);
+        if (remittance_amount < 10) {
+        // alert("Minimum amount is 10 USDAO");
+        swal("Error!", "Minimum amount is 10 USDAO!", "error");
+        return false;
+        }
+        // debugger;
+        if (usdaobalance < remittance_amount) {
+        // alert("Minimum amount is 10 USDAO");
+        swal("Error!", "You Don't have sufficient balance!", "error");
+        return false;
+        }
+        //console.log(remittanceContract);
+        const user_secret = ethers.utils.formatBytes32String((String(+ new Date())));
+        console.log(user_secret);
+        setUsersecret(user_secret)
+        // console.log(typeof user_secret);
+        // console.log(remittanceContract.encrypt);
+        const encrypt_hash = await remittanceContract.encrypt(user_secret, exchangerAddress);
+        console.log("encrypt_hash", encrypt_hash);
+        setEncrypthash(encrypt_hash)
+        // remittanceContract.
+        // alert(`Please send ${remittance_amount} USDAO to ${remittanceContract.address} ASAP.
+        // here is your Hash : ${encrypt_hash}
+        // `);
+        
+        // Send USDAO from sender to the Remittance contract
+        const remit_amount = ethers.utils.parseEther(String(remittance_amount));
+        console.log("remit_amount", remit_amount);
+        console.log("remittanceContract.address", remittanceContract.address);
+        // debugger;
+        const transfer = await usdaoContract.transfer(remittanceContract.address, remit_amount);
+        if(!transfer) {
+        setError("Failed to transfer USDAO to Remittance contract.");
+        return false;
+        }
+        
+        // Push remittance data in the blockchain
+        console.log(remit_amount)
+        console.log(Number(remit_amount));
+        const remit = await remittanceContract.remit(encrypt_hash, "3600", remit_amount);
+        console.log(remit);
+        console.log(typeof user_secret)
+        swal("Transfer Success!", `Please send ${String(user_secret)} to the reciever!`, "success");
+        
+        return true;
+        
+        } catch (error) {
+        console.log(error)
+        swal("Error!", error, "error");
+        }
+        }
+    
+// 0x3136323439353136343334393000000000000000000000000000000000000000
+    // const new_remit = async (exchangerAddress, remittance_amount) => {
+    //     debugger;
+    //     try {
 
-            remittance_amount = Number(remittance_amount);
-            if (remittance_amount < 10) {
-                // alert("Minimum amount is 10 USDAO");
-                swal("Error!", "Minimum amount is 10 USDAO!", "error");
-                return false;
-            }
-            // debugger;
-            if (usdaobalance < remittance_amount) {
-                // alert("Minimum amount is 10 USDAO");
-                swal("Error!", "You Don't have sufficient balance!", "error");
-                return false;
-            }
-            //console.log(remittanceContract);
-            const user_secret = ethers.utils.formatBytes32String((String(+ new Date())));
-            console.log(user_secret);
-            setUsersecret(user_secret)
-            // console.log(typeof user_secret);
-            // console.log(remittanceContract.encrypt);
-            const encrypt_hash = await remittanceContract.encrypt(user_secret, exchangerAddress);
-            console.log("encrypt_hash", encrypt_hash);
-            setEncrypthash(encrypt_hash)
-            // remittanceContract.
-            alert(`Please send ${remittance_amount} USDAO to ${remittanceContract.address} ASAP.
-                    here is your Hash : ${encrypt_hash}
-            `);
+    //         remittance_amount = Number(remittance_amount);
+    //         if (remittance_amount < 10) {
+    //             // alert("Minimum amount is 10 USDAO");
+    //             swal("Error!", "Minimum amount is 10 USDAO!", "error");
+    //             return false;
+    //         }
+    //         // debugger;
+    //         if (usdaobalance < remittance_amount) {
+    //             // alert("Minimum amount is 10 USDAO");
+    //             swal("Error!", "You Don't have sufficient balance!", "error");
+    //             return false;
+    //         }
+    //         //console.log(remittanceContract);
+    //         const user_secret = ethers.utils.formatBytes32String((String(+ new Date())));
+    //         console.log(user_secret);
+    //         setUsersecret(user_secret)
+    //         // console.log(typeof user_secret);
+    //         // console.log(remittanceContract.encrypt);
+    //         const encrypt_hash = await remittanceContract.encrypt(user_secret, exchangerAddress);
+    //         console.log("encrypt_hash", encrypt_hash);
+            
+    //         if(localStorage.getItem('encrypthash')){
+    //             localStorage.removeItem('encrypthash')
+    //         }
+    //         localStorage.setItem('encrypthash', encrypt_hash)
+    //         setEncrypthash(encrypt_hash)
+    //         // remittanceContract.
+    //         alert(`Please send ${remittance_amount} USDAO to ${remittanceContract.address} ASAP.
+    //                 here is your Hash : ${encrypt_hash}
+    //         `);
             
         
             
-            return true;
+    //         return true;
 
-        } catch (error) {
-            console.log(error)
-            swal("Error!", error, "error");
-        }
-    }
+    //     } catch (error) {
+    //         console.log(error)
+    //         swal("Error!", error, "error");
+    //     }
+    // }
 
     const submitdata = data => {
-        debugger;
+        
         setAmount({ amount: data.amount })
         new_remit(data.address, data.amount)
     }
@@ -317,15 +384,22 @@ function App() {
                 alert("Withdrawal amount must be greater than 0");
                 return;
             }
+            debugger;
+            const exchange = await remittanceContract.exchange(String(user_secret));
 
-            const exchange = await remittanceContract.exchange(user_secret);
             const exchange_receipt = await exchange.wait(2);
             console.log(exchange_receipt);
 
-            const withdraw = await remittanceContract.withdraw(Number(withdrawal_amount).toString());
-            console.log(withdraw);
-            let withdraw_receipt =  await withdraw.wait(2);
-            console.log(withdraw_receipt);
+            if(exchange_receipt)
+            {
+                const withdraw = await remittanceContract.withdraw(Number(withdrawal_amount).toString());
+                console.log(withdraw);
+                let withdraw_receipt =  await withdraw.wait(2);
+                console.log(withdraw_receipt);
+                swal(`Received ${withdrawal_amount} USDAO!`, `Please transfer USD ${withdrawal_amount} to the receiver!`, "success");
+            }
+
+// 0x3136323439353536363330393800000000000000000000000000000000000000
 
             // Update USDAO balance in UI
             return true;
@@ -337,7 +411,7 @@ function App() {
 
     const remittance_balance = async () => {
         try {
-            const remit_balance = await remittanceContract.balances(loggedInAccount);
+            const remit_balance = await remittanceContract.balances("0xd9F05ef1E7EEa7ac0941c27574d4eD7cfd376Dd0");
             console.log(Number(remit_balance));
             setRemittance(Number(ethers.utils.formatEther(String(remit_balance))));
         } catch (error) {
@@ -392,7 +466,7 @@ function App() {
                             <p>USDAO Balance : {usdaobalance}</p>
                             <p>Remittance Balance : {remittance}</p>
                             <p>User Secret : {userSecret}</p>
-                            <p>Hash : {encrypthash}</p>
+                            <p>Hash : {localStorage.getItem('encrypthash')}</p>
                         </div>
                     </div>
                     <div class="row d-flex justify-content-between ">
@@ -401,10 +475,16 @@ function App() {
                                 <div class="alert alert-light" role="alert">
                                     Remittance Sender
                                 </div>
-                                <Exchangeform onSubmit={submitdata} />
-                                <button onClick={() => send_remit_request(encrypthash, amount)}>New Remittance</button>
+                                <Exchangeform onSubmit={submitdata} fieldOne='Enter Exchanger Address'/>
+                                {/* <button onClick={() => send_remit_request(encrypthash, amount)}>New Remittance</button> */}
                                 {/* <button onClick={() => view_remittance(encrypthash.encrypthash)}>View Remittance</button> */}
-                                <button onClick={() => view_remittance("0x0b9fd3c4b0108bfa1d3c781f36f781a64776e24ff682316768b0b9ccc129190e")}>View Remittance</button>
+                                <form onSubmit={handleSubmit((data)=>view_remittance(data.hash))}>
+                                    <input  type="text" placeholder="Enter Hash" {...register("hash", { required: true })} />    
+                                    {/* <input type="submit" /> */}
+                                    {/* <button onClick={() => view_remittance("0x0b9fd3c4b0108bfa1d3c781f36f781a64776e24ff682316768b0b9ccc129190e")} type='submit'>View Remittance</button> */}
+                                    <button type='submit'>View Remittance</button>
+                                </form>
+                                
                             </div>
                             <p>Remittance amount : {viewremittance.amount ? viewremittance.amount : 'Remittance value do not Exist' }</p>
                             <p>Remittance deadline: {viewremittance.deadline ? viewremittance.deadline : 'Remitance Expired' }</p>
@@ -415,12 +495,16 @@ function App() {
                                 <div class="alert alert-light" role="alert">
                                     Remittance Exchanger
                                 </div>
-                                <Exchangeform onSubmit={exchanger_withdrawal_Submit} />
+                                <Exchangeform onSubmit={exchanger_withdrawal_Submit} fieldOne='Enter User Hash'/>
                                 {/* <button onClick={() => exchanger_withdrawal(
                                     "0x3136323438303135363631353900000000000000000000000000000000000000",
                                     20
                                 )}>Withdraw Received Amount</button> */}
-                               
+                               <form onSubmit={handleSubmit((data)=>view_remittance(data.hash))}>
+                                    <input  type="text" placeholder="Enter Hash" {...register("hash", { required: true })} />    
+                                    
+                                    <button type='submit'>View Remittance</button>
+                                </form>
                                 <button onClick={() => remittance_balance()}>Remittance Balance</button>
                                 <button onClick={() => usdao_balance()}>USDAO Balance</button>
 
