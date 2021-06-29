@@ -206,16 +206,11 @@ function App() {
         networkId,
         loggedInAccount,
         remittanceContract
-    ]);
-
-
-
-    
+    ]);    
 
     const new_remit = async (exchangerAddress, remittance_amount) => {
-        debugger;
         try {
-
+            
             remittance_amount = Number(remittance_amount);
             if (remittance_amount < 10) {
                 // alert("Minimum amount is 10 USDAO");
@@ -238,12 +233,27 @@ function App() {
             console.log("encrypt_hash", encrypt_hash);
             setEncrypthash(encrypt_hash)
             // remittanceContract.
-            alert(`Please send ${remittance_amount} USDAO to ${remittanceContract.address} ASAP.
-                    here is your Hash : ${encrypt_hash}
-            `);
+            // alert(`Please send ${remittance_amount} USDAO to ${remittanceContract.address} ASAP.
+            //         here is your Hash : ${encrypt_hash}
+            // `);
+          
+            // Send USDAO from sender to the Remittance contract
+            const remit_amount = ethers.utils.parseEther(String(remittance_amount));
+            console.log(Number(remit_amount));
+            const transfer = await usdaoContract.transfer(remittanceContract.address, remit_amount);
+            if(!transfer) {
+                setError("Failed to transfer USDAO to Remittance contract.");
+                return false;
+            }
+
+            // Push remittance data in the blockchain
             
-        
             
+            const remit = await remittanceContract.remit(encrypt_hash, "3600", remit_amount);
+            console.log(remit);
+
+            swal("Transfer Success!", "Please send "+user_secret+" to the reciever!", "");
+
             return true;
 
         } catch (error) {
@@ -253,7 +263,6 @@ function App() {
     }
 
     const submitdata = data => {
-        debugger;
         setAmount({ amount: data.amount })
         new_remit(data.address, data.amount)
     }
@@ -318,7 +327,7 @@ function App() {
                 return;
             }
 
-            const exchange = await remittanceContract.exchange(user_secret);
+            const exchange = await remittanceContract.exchange(String(user_secret));
             const exchange_receipt = await exchange.wait(2);
             console.log(exchange_receipt);
 
@@ -350,6 +359,7 @@ function App() {
             const usdao_balance = await usdaoContract.balanceOf(loggedInAccount);
             console.log(Number(usdao_balance));
             setUSDAObalance(Number(ethers.utils.formatEther(String(usdao_balance))))
+            console.log("Remit ", await usdaoContract.balanceOf(remittanceContract.address));
             
         } catch (error) {
             console.error(error);

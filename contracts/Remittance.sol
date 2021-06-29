@@ -59,6 +59,9 @@ contract Remittance is Stoppable {
         remittances[hashValue].deadline = block.timestamp+second;
         remittances[hashValue].exists = true;
 
+        // todo: We can also add exchager address and txid of usdao sent to the contract in
+        // the above struct 
+
         emit Remit(hashValue, msg.sender, remittance_amount);
 
         return true;
